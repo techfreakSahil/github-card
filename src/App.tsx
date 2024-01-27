@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useState } from "react";
 import "./App.css";
 import { FaHeart, FaLinkedin, FaGithub } from "react-icons/fa";
 import Card from "./Card";
