@@ -1,5 +1,5 @@
 import { User } from "../App";
-import Card from "./Card";
+import Card from "./card";
 export function UserCard({ user, repos }: { user: User; repos: any[] }) {
   return (
     <Card
