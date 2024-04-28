@@ -3,7 +3,7 @@ import * as htmlToImage from "html-to-image";
 
 export const useDownloader = () => {
   const card: any = document.getElementById("card");
-  htmlToImage.toPng(card, { quality: 0.95 }).then(function (dataUrl): any {
+  htmlToImage.toPng(card, { quality: 1 }).then(function (dataUrl): any {
     const pdf = new jsPDF("p", "mm", "a4");
     const imgProps = pdf.getImageProperties(dataUrl);
     const pdfWidth = pdf.internal.pageSize.getWidth();

@@ -1,10 +1,10 @@
 import { ChangeEvent, useState } from "react";
 import "./App.css";
-import { FaHeart, FaLinkedin, FaGithub } from "react-icons/fa";
-import Card from "./Card";
 import { useDownloader } from "./hooks/useDownloader";
+import Footer from "./components/footer";
+import { UserCard } from "./components/usercard";
 
-interface User {
+export interface User {
   id: number;
   login?: string;
   avatar_url: string;
@@ -12,20 +12,44 @@ interface User {
   following: number;
   name: string | undefined;
   public_repos: number;
+  message?: string;
+}
+function Button({
+  content,
+  onClick,
+}: {
+  content: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="bg-gray-800 w-2/3 px-3 py-1 rounded-xl text-white hover:bg-gray-700 shadow-sm"
+      onClick={onClick}
+    >
+      {content}
+    </button>
+  );
 }
 
 const App = () => {
   const [username, setUserName] = useState<string>("");
   const [user, setUser] = useState<User>();
   const [repos, setRepos] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>();
-  const TOKEN = import.meta.env.VITE_TOKEN;
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setUserName(e.target.value);
-  };
+  const [userfound, setUserFound] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
 
-  const generateRepos = async () => {
+  const generateInfoHandler = async () => {
+    if (!username) {
+      setUserFound(false);
+      return;
+    }
     try {
+      const response = await fetch(`https://api.github.com/users/${username}`, {
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+        },
+      });
       const responserepo = await fetch(
         `https://api.github.com/users/${username}/repos`,
         {
@@ -34,100 +58,70 @@ const App = () => {
           },
         }
       );
+      if (response.status === 404) {
+        setUserFound(false);
+        setIsLoading(false);
+        return;
+      }
+      setUserFound(true);
+      const data: User = await response.json();
+      setUser(data);
       const repodata = await responserepo.json();
       const repoArray = Object.values(repodata);
       setRepos(repoArray.splice(0, 4));
     } catch (error) {
-      setIsLoading(false);
-      console.log("error");
+      setUserFound(false);
     }
   };
-
-  const generateHandler = async () => {
-    if (!username) {
-      setIsLoading(false);
-    }
-    try {
-      setIsLoading(true);
-      const response = await fetch(`https://api.github.com/users/${username}`, {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-        },
-      });
-      const data: User = await response.json();
-      setUser(data);
-    } catch (error) {
-      setIsLoading(false);
-      console.log("error");
-    }
-    generateRepos();
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setUserName(e.target.value);
   };
-
   const downloadHandler = () => {
     useDownloader();
   };
 
   return (
-    <div className=" bg-[#8EE4AF] min-w-screen min-h-screen flex justify-center items-center flex-col">
-      <div className=" bg-[#5CDB95] border-[#68b485] rounded-lg p-4 w-[400px] shadow-md flex flex-col items-center gap-6">
-        <h2 className="">
-          <span className="font-[logo] text-2xl font-semibold text-[#05386B]">
+    <div className=" bg-zinc-950 min-w-screen min-h-screen flex justify-center items-center flex-col">
+      <div className="bg-white border-gray-300 rounded-xl p-4 mt-4 w-[400px] shadow-md flex flex-col items-center gap-4">
+        <h2>
+          <span className="font-[logo] text-4xl font-semibold text-gray-900">
             GitHub Card Generator
           </span>
         </h2>
-        <label className="font-[logo] text-xl font-normal">
+        <label className="font-[logo] text-xl self-start font-normal text-gray-700">
           Enter username
         </label>
         <input
           type="text"
-          placeholder="username"
+          placeholder="Your username"
           onChange={handleInputChange}
           className="
-  px-2 py-2 font-[logo] relative bg-[#fff] rounded-md text-black text-sm border border-[#379683] w-full"
+    px-3 py-2 font-[logo] rounded-xl relative bg-[#fff] text-black text-sm border border-[#384240] w-full
+    focus:outline-none focus:ring-2 focus:ring-[#05386B] transition duration-200 ease-in-out
+    shadow-sm placeholder-gray-500"
         ></input>
         <button
-          className="bg-[#05386B] px-3 py-1 rounded-md text-white hover:bg-[#345f8a]"
-          onClick={generateHandler}
+          className="
+    bg-gray-800 w-2/3 px-3 py-1 rounded-xl text-white hover:bg-gray-700  
+    shadow-sm"
+          onClick={generateInfoHandler}
         >
           Generate
         </button>
-        {isLoading ? (
+        {userfound ? (
           <>
-            <Card
-              avatar={user?.avatar_url}
-              idname={user?.name ? user.name : user?.login}
-              followers={user?.followers}
-              following={user?.following}
-              repocount={user?.public_repos}
-              repos={repos}
-            />
-            {isLoading ? (
-              <button
-                className="bg-[#05386B] px-3 py-1 w-full rounded-md text-white hover:bg-[#345f8a]"
-                onClick={downloadHandler}
-              >
-                Download
-              </button>
-            ) : (
-              <div></div>
-            )}
+            {user && <UserCard user={user} repos={repos} />}
+            <Button content="Download" onClick={downloadHandler} />
           </>
         ) : (
-          ""
+          !isLoading && (
+            <div className="bg-gray-200 text-gray-700 px-3 py-2 rounded-xl shadow-sm mt-4 text-center">
+              User not found
+            </div>
+          )
         )}
       </div>
-      <div className="m-5 mb-3 text-lg text-[#fff] flex gap-2 font-[logo] ">
-        Made with <FaHeart color="red" />
-        by Md Sahil Khan
-      </div>
-      <div className="flex gap-5 mb-3">
-        <a href="https://github.com/techfreakSahil">
-          <FaGithub size={20} color="white" />
-        </a>
-        <a href="https://www.linkedin.com/in/md-sahil-khan-133490227/">
-          <FaLinkedin size={20} color="white" />
-        </a>
-      </div>
+      <Footer />
     </div>
   );
 };
